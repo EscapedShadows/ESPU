@@ -180,15 +180,16 @@ class Logger:
     """
 
     __slots__ = (
-        "name",
         "level",
         "start_time",
         "_handlers",
         "_needs_time",
-        "_needs_thread"
+        "_needs_thread",
+        "_thread_safe",
+        "_lock"
     )
 
-    def __init__(self, level: int = INFO) -> None:
+    def __init__(self, level: int = INFO, *, thread_safe: bool = False) -> None:
         self.level = level
         # Capture the creation time of the Logger for elapsed time templates
         self.start_time = time.time()
@@ -199,7 +200,25 @@ class Logger:
         self._needs_time: bool = False
         self._needs_thread: bool = False
 
+        self._thread_safe = thread_safe
+        # Create a lock if neccesary
+        self._lock = threading.RLock() if thread_safe else None
+
     def attach(self, handler: BaseHandler) -> None:
+        """Add a handler to this logger.
+        
+        The logger will call the handler for every log message.
+        If the same handler is attached multiple times it will
+        receive duplicate log messages.
+        """
+        # Thread safe wrapper
+        if self._thread_safe:
+            with self._lock:
+                self._attach(handler)
+        else:
+            self._attach(handler)
+
+    def _attach(self, handler: BaseHandler) -> None:
         """Add a handler to this logger.
         
         The logger will call the handler for every log message.
@@ -215,6 +234,15 @@ class Logger:
         self._recalc_needs()
 
     def detach(self, handler: BaseHandler) -> None:
+        """Remove a handler from this logger if present."""
+        # Thread safe wrapper
+        if self._thread_safe:
+            with self._lock:
+                self._detach(handler)
+        else:
+            self._detach(handler)
+
+    def _detach(self, handler: BaseHandler) -> None:
         """Remove a handler from this logger if present."""
         try:
             self._handlers.remove(handler)
@@ -236,17 +264,23 @@ class Logger:
 
     def _log(self, level: int, msg: str) -> None:
         """Dispatch a log message to all attached handlers."""
-        if level < self.level:
-            # Skip messages below the logger threshold
+        # Skip messages below the logger threshold or if there are no attached handlers.
+        if level < self.level or not self._handlers:
             return
-        if not self._handlers:
-            # If there are no handlers, there is nothing to do.
-            return
+        
+        if self._thread_safe:
+            with self._lock:
+                self._dispatch(level, msg)
+        else:
+            self._dispatch(level, msg)
+
+    def _dispatch(self, level: int, msg: str) -> None:
         frame = sys._getframe(2)
-        created: float | None = time.time() if self._needs_time else None
-        thread_name: str | None = (
+        created = time.time() if self._needs_time else None
+        thread_name = (
             threading.current_thread().name if self._needs_thread else None
         )
+
         # Fan out to handlers. Each handler performs its own logic.
         for handler in self._handlers:
             handler.handle(msg, level, frame, created, thread_name)

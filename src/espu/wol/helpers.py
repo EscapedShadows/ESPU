@@ -42,13 +42,13 @@ def get_iface_ipv4_unix(ifname: str) -> str:
 # where a device has two or more NICs on different networks that share
 # the same IPv4 Address. Unlikely but its the entire reason i put
 # myself trough the pain of working with Win32 API.
-def get_ip_owners():
+def get_ip_owners(win_buffer_size: int) -> dict:
     owners = {}
     system = platform.system().lower()
 
     if system == "windows":
         # Call that Win32 API monster
-        for a in get_windows_adapters():
+        for a in get_windows_adapters(win_buffer_size):
             for ip in a["ips"]:
                 owners.setdefault(ip, []).append(a["friendly"] or a["name"])
     else:
@@ -63,11 +63,11 @@ def get_ip_owners():
 # Resolves an interface name to:
 #   its IPv4 address
 #   and (on Windows) its interface index
-def resolve_iface(iface: str):
+def resolve_iface(iface: str, win_buffer_size: int):
     system = platform.system().lower()
 
     if system == "windows":
-        for a in get_windows_adapters():
+        for a in get_windows_adapters(win_buffer_size):
             if iface.lower() in (a["friendly"] or "").lower() or iface == a["name"]:
                 # 169.254.x.x is APIPA (Automatic Private IP Addressing).
                 # Basically meaning that Windows screwed up to get an IP.

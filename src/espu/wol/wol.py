@@ -4,7 +4,7 @@ import socket
 
 # Sends a Wake-on-LAN (WoL) packet with optional control over
 # source IP and network interface.
-def wake_on_lan(mac, dest_ip="255.255.255.255", port=9, src_ip=None, iface=None):
+def wake_on_lan(mac, dest_ip="255.255.255.255", port=9, src_ip=None, iface=None, win_buffer_size=1024*1024):
     """
     Send a Wake-on-LAN (WoL) magic packet to a target device.
 
@@ -30,6 +30,8 @@ def wake_on_lan(mac, dest_ip="255.255.255.255", port=9, src_ip=None, iface=None)
         Network interface name to send the packet through. If specified,
         it overrides src_ip and is resolved to the appropriate source
         address and (on Windows) interface index.
+    win_buffer : int, optional
+        How many bytes the string buffer for GetAdaptersAddresses should get.
 
     Raises
     ------
@@ -49,7 +51,7 @@ def wake_on_lan(mac, dest_ip="255.255.255.255", port=9, src_ip=None, iface=None)
 
     # If a source IP is provided make sure it belongs to exactly one interface
     if src_ip:
-        owners = get_ip_owners()
+        owners = get_ip_owners(win_buffer_size)
         if src_ip in owners and len(owners[src_ip]) > 1:
             raise RuntimeError(
                 f"Source IP {src_ip} exsts on multiple interfaces: {owners[src_ip]}. Refusing to guess. Use --iface instead."
@@ -57,7 +59,7 @@ def wake_on_lan(mac, dest_ip="255.255.255.255", port=9, src_ip=None, iface=None)
         
     win_ifindex = None
     if iface:
-        src_ip, win_ifindex = resolve_iface(iface)
+        src_ip, win_ifindex = resolve_iface(iface, win_buffer_size)
         if not src_ip:
             raise RuntimeError(f"Could not resolve interface: {iface}")
         

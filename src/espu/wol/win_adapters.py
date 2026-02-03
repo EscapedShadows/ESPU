@@ -9,7 +9,7 @@ import socket
 # Just a funfact:
 # This entire 100+ line Monster exists purely because Windows doesnt accept
 # interface names into sock.bind() directly unlike Unix. Gotta love it.
-def get_windows_adapters():
+def get_windows_adapters(win_buffer_size: int) -> list:
     import ctypes
     from ctypes import wintypes
 
@@ -18,7 +18,6 @@ def get_windows_adapters():
     AF_INET = 2
 
     # Flag telling Windows to include prefix information (subnet data).
-    # We dont really need it but its required for Windows to internally handle some stuff.
     GAA_FLAG_INCLUDE_PREFIX = 0x0010
 
     # --- Low-level struct definitions ---
@@ -85,14 +84,14 @@ def get_windows_adapters():
         ctypes.POINTER(wintypes.ULONG)          # In/out buffer size
     ]
 
-    # Im going to be honest here. Allocating 1MB of buffer is not how
+    # Im going to be honest here. Allocating 1MB of buffer (the default setting) is not how
     # this API is supposed to be used. In normal setups, 16KB is enough.
     # However i just want to make sure that even if someone has 100 Virtual Adapters
-    # the buffer wont overflow. Plus 1MB of RAM in 2025 is really nothing.
+    # the buffer wont overflow. Plus 1MB of RAM in 2026 is really nothing.
     # The reason for that is that its very possible for the enviroment to be a Hyper-V
     # or something else that just naturally adds a lot of Network Adapters.
     # Hate it all you want but performance wise its basically 0 overhead.
-    buf_len = wintypes.ULONG(1024 * 1024)
+    buf_len = wintypes.ULONG(win_buffer_size)
     buf = ctypes.create_string_buffer(buf_len.value)
 
     # Ask Windows to fill the buffer with adapter data

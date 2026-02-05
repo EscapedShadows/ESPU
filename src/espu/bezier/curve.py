@@ -3,6 +3,7 @@ from .helpers import quadratic_roots, curvature_from_derivatives, lerp, t_at_arc
 from typing import Tuple
 
 # According to the Bernstein Polynomial Form
+# https://en.wikipedia.org/wiki/Bernstein_polynomial
 
 class LinearBezierCurve:
     def __init__(self, P1: Point, P2: Point):

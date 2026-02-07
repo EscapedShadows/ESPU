@@ -65,6 +65,8 @@ def main():
         if testpypi
         else None
     )
+    if not testpypi:
+        return
 
     for pkg_dir in sorted(PACKAGES.iterdir()):
         if not pkg_dir.is_dir():

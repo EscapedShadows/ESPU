@@ -183,7 +183,7 @@ def write_core_pyproject(core_dst: Path, registry: dict[str, dict]):
 def write_ext_pyproject(dst: Path, ext_name: str, registry: dict[str, dict]):
     template = (TEMPLATES / "ext.toml").read_text(encoding="utf-8")
     deps = resolve_ext_dependencies(ext_name, registry)
-    deps_text = ",\n".join(f'"{d}"' for d in deps)
+    deps_text = ",\n    ".join(f'"{d}"' for d in deps)
 
     text = (
         template
@@ -196,7 +196,7 @@ def write_ext_pyproject(dst: Path, ext_name: str, registry: dict[str, dict]):
 def write_lib_pyproject(dst: Path, lib_name: str, registry: dict[str, dict]):
     template = (TEMPLATES / "lib.toml").read_text(encoding="utf-8")
     deps = resolve_lib_dependencies(lib_name, registry)
-    deps_text = ",\n".join(f'"{d}"' for d in deps)
+    deps_text = ",\n    ".join(f'"{d}"' for d in deps)
 
     text = (
         template

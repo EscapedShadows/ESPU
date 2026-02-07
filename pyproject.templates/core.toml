@@ -15,6 +15,12 @@ dependencies = []
 [project.optional-dependencies]
 {extras}
 
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"espu.core" = ["registry.json"]
+
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"

@@ -17,5 +17,7 @@ pip install espu[<extension>]
 ## Links
 
 Core package:
-https://pypi.org/project/espu/
-https://github.com/EscapedShadows/ESPU
+
+PyPI: https://pypi.org/project/espu/
+
+GitHub: https://github.com/EscapedShadows/ESPU

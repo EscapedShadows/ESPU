@@ -1,0 +1,19 @@
+[project]
+name = "{name}"
+version = "{version}"
+description = "Internal library for the ESPU ecosystem"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+authors = [
+    { name = "EscapedShadows" }
+]
+
+dependencies = [
+    "espu=={version}"
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"

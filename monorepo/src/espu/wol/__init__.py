@@ -1,0 +1,1 @@
+from .wol import wake_on_lan

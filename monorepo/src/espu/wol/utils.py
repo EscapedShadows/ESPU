@@ -2,6 +2,7 @@ import socket
 import struct
 import platform
 from .win_adapters import get_windows_adapters
+from .exceptions import InvalidMACFormat
 
 # Magic packet according to
 # https://www.amd.com/content/dam/amd/en/documents/archived-tech-docs/white-papers/20213.pdf
@@ -9,7 +10,7 @@ from .win_adapters import get_windows_adapters
 def build_magic_packet(mac_address: str) -> bytes:
     mac = mac_address.replace(":", "").replace("-", "").strip()
     if len(mac) != 12 or any(c not in "0123456789abcdefABCDEF" for c in mac):
-        raise ValueError("Invalid MAC address format")
+        raise InvalidMACFormat(mac_address)
     return b"\xff" * 6 + bytes.fromhex(mac) * 16
 
 def set_windows_unicast_if(sock: socket.socket, ifindex: int):

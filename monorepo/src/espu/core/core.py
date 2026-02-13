@@ -71,18 +71,22 @@ def _espu_contributors() -> dict[str, set[str]]:
 
 # Public API
 def available() -> set[str]:
+    """Returns all available ESPU packages."""
     return set(_AVAILABLE.keys())
 
 def installed() -> set[str]:
+    """Returns all installed ESPU packages."""
     found: set[str] = set()
     for comps in _espu_contributors().values():
         found |= comps
     return found
 
 def unknown() -> set[str]:
+    """Returns any installed but unknown ESPU packages."""
     return installed() - available()
 
 def info(name: str) -> ComponentInfo:
+    """Returns info for a specific ESPU package."""
     try:
         return _AVAILABLE[name]
     except KeyError:

@@ -1,4 +1,5 @@
 import socket
+from .exceptions import AdapterBufferOverflow, GetAdaptersAddressesError
 
 # Use the horrific Win32 API to get a list of Windows network adapters.
 # This function asks Windows for a snapshot of all IPv4 adapters,
@@ -7,7 +8,7 @@ import socket
 # just so anyone reading this code has a shot of understanding what is going on here.
 #
 # Just a funfact:
-# This entire 100+ line Monster exists purely because Windows doesnt accept
+# This entire Monster exists purely because Windows doesnt accept
 # interface names into sock.bind() directly unlike Unix. Gotta love it.
 def get_windows_adapters(win_buffer_size: int) -> list:
     import ctypes
@@ -106,9 +107,9 @@ def get_windows_adapters(win_buffer_size: int) -> list:
     # ERROR_BUFFER_OVERFLOW means even 1MB wasnt enough.
     # At this point something is seriously wrong with the system.
     if ret == 111:
-        raise RuntimeError("1 MB buffer was not enough. Please rethink how many of the dozen Network Adapters you are using are actually needed.")
+        raise AdapterBufferOverflow()
     elif ret != 0:
-        raise OSError(f"GetAdaptersAddresses failed ({ret})")
+        raise GetAdaptersAddressesError(ret)
     
     adapters = []
 

@@ -1,6 +1,7 @@
 from .utils import build_magic_packet, resolve_iface, set_windows_unicast_if, get_ip_owners
 import platform
 import socket
+from .exceptions import DuplicateIPError, ResolveInterfaceError
 
 # Sends a Wake-on-LAN (WoL) packet with optional control over
 # source IP and network interface.
@@ -53,15 +54,13 @@ def wake_on_lan(mac, dest_ip="255.255.255.255", port=9, src_ip=None, iface=None,
     if src_ip:
         owners = get_ip_owners(win_buffer_size)
         if src_ip in owners and len(owners[src_ip]) > 1:
-            raise RuntimeError(
-                f"Source IP {src_ip} exsts on multiple interfaces: {owners[src_ip]}. Refusing to guess. Use --iface instead."
-            )
+            raise DuplicateIPError(src_ip, owners[src_ip])
         
     win_ifindex = None
     if iface:
         src_ip, win_ifindex = resolve_iface(iface, win_buffer_size)
         if not src_ip:
-            raise RuntimeError(f"Could not resolve interface: {iface}")
+            raise ResolveInterfaceError(iface)
         
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
@@ -75,7 +74,7 @@ def wake_on_lan(mac, dest_ip="255.255.255.255", port=9, src_ip=None, iface=None,
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_BINDTODEVICE, iface.encode())
 
         # Windows-style interface binding
-        if win_ifindex and system == "windows":
+        if win_ifindex is not None and system == "windows":
             set_windows_unicast_if(sock, win_ifindex)
 
         sock.sendto(magic, (dest_ip, port))

@@ -1,9 +1,10 @@
 from espu.lib.vector import Vec2
-from .helpers import quadratic_roots, curvature_from_derivatives, lerp, t_at_arc_length, build_arc_table
+from .utils import quadratic_roots, curvature_from_derivatives, lerp, t_at_arc_length, build_arc_table
 from typing import Tuple
+from .exceptions import CurveNotBakedError
 
 # According to the Bernstein Polynomial Form
-
+#https://en.wikipedia.org/wiki/Bernstein_polynomial
 class LinearBezierCurve:
     def __init__(self, P1: Vec2, P2: Vec2):
         self.P1 = P1
@@ -25,6 +26,7 @@ class QuadraticBezierCurve:
         self.P1 = P1
         self.P2 = P2
         self.P3 = P3
+        self._baked = False
 
     def resolve(self, t: float) -> Vec2:
         u = 1.0 - t
@@ -41,7 +43,7 @@ class QuadraticBezierCurve:
         )
     
     def bounding_box(self) -> Tuple[float, float, float, float]:
-        Points = [
+        points = [
             self.resolve(0.0),
             self.resolve(1.0)
         ]
@@ -60,12 +62,12 @@ class QuadraticBezierCurve:
         ty = axis_root(d.P1.y, d.P2.y)
 
         if tx is not None:
-            Points.append(self.resolve(tx))
+            points.append(self.resolve(tx))
         if ty is not None:
-            Points.append(self.resolve(ty))
+            points.append(self.resolve(ty))
 
-        xs = [p.x for p in Points]
-        ys = [p.y for p in Points]
+        xs = [p.x for p in points]
+        ys = [p.y for p in points]
 
         return min(xs), min(ys), max(xs), max(ys)
     
@@ -80,7 +82,7 @@ class QuadraticBezierCurve:
 
     def resolve_uniform(self, u: float) -> Vec2:
         if not self._baked:
-            raise RuntimeError("Curve must be baked before uniform evaluation")
+            raise CurveNotBakedError()
         s = u * self._arc_length
         t = t_at_arc_length(self, s)
         return self.resolve(t)
@@ -110,7 +112,7 @@ class CubicBezierCurve:
         )
     
     def bounding_box(self) -> Tuple[float, float, float, float]:
-        Points = [
+        points = [
             self.resolve(0.0),
             self.resolve(1.0)
         ]
@@ -124,14 +126,14 @@ class CubicBezierCurve:
 
         for t in quadratic_roots(a.x, b.x, c.x):
             if 0.0 < t < 1.0:
-                Points.append(self.resolve(t))
+                points.append(self.resolve(t))
             
         for t in quadratic_roots(a.y, b.y, c.y):
             if 0.0 < t < 1.0:
-                Points.append(self.resolve(t))
+                points.append(self.resolve(t))
 
-        xs = [p.x for p in Points]
-        ys = [p.y for p in Points]
+        xs = [p.x for p in points]
+        ys = [p.y for p in points]
 
         return min(xs), min(ys), max(xs), max(ys)
     
@@ -147,7 +149,7 @@ class CubicBezierCurve:
 
     def resolve_uniform(self, u: float) -> Vec2:
         if not self._baked:
-            raise RuntimeError("Curve must be baked before uniform evaluation")
+            raise CurveNotBakedError()
         s = u * self._arc_length
         t = t_at_arc_length(self, s)
         return self.resolve(t)

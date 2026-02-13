@@ -2,3 +2,5 @@ __pycache__/
 *.pyc
 secret.py
 packages
+build.py
+publish.py

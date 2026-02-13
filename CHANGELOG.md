@@ -1,3 +1,11 @@
+## 0.1.1
+
+Changed:
+- Removed section of README.md because it currently is irrelevant
+
+Removed:
+- Build and Publish script
+
 ## 0.1.0
 
 Added:

@@ -126,7 +126,7 @@ This trade-off favors clarity and stability over fine-grained versioning.
 ## Resources
 [Changelog](./CHANGELOG.md)
 
-[Documentation](./DOCUMENTATION.md)
+~~[Documentation](./DOCUMENTATION.md)~~ Please be patient as i am working on the documentation.
 
 ---
 

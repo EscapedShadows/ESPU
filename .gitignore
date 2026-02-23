@@ -4,3 +4,4 @@ secret.py
 packages
 build.py
 publish.py
+server.py

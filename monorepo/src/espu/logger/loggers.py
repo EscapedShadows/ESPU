@@ -10,10 +10,12 @@ class TerminalLogger(BaseHandler):
     
     Parameters
     ----------
-    template: str
-        Logging template for this handler. See Formatter for details.
-    start_time: float
+    template: str | None, optional
+        Logging template for this handler. If None, defaults to "{{msg}}".
+        See Formatter Documentation for details.
+    start_time: float | None, optional
         The start time of the parent Logger. Passed into the Formatter.
+        If None, the current time is used.
     level: int, optional
         Minimum log level for this handler (default: INFO).
     stream: Text I/O, optional
@@ -27,15 +29,17 @@ class TerminalLogger(BaseHandler):
 
     __slots__ = ("stream", "flush")
 
-    def __init__(self, *, template: str, level: int = INFO, stream=None, flush: bool = False, start_time: float | None = None) -> None:
+    def __init__(self, *, template: str | None = None, level: int = INFO, stream=None, flush: bool = False, start_time: float | None = None) -> None:
         """Create a terminal handler.
 
         Parameters
         ----------
-        template: str
-            Logging template for this handler. See Formatter for details.
-        start_time: float
+        template: str | None, optional
+            Logging template for this handler. If None, defaults to "{{msg}}".
+            See Formatter Documentation for details.
+        start_time: float | None, optional
             The start time of the parent Logger. Passed into the Formatter.
+            If None, the current time is used.
         level: int, optional
             Minimum log level for this handler (default: INFO).
         stream: Text I/O, optional
@@ -48,6 +52,7 @@ class TerminalLogger(BaseHandler):
         """
         if start_time is None:
             start_time = time.time()
+        template = "{{msg}}" if template is None else template
         formatter = Formatter(template=template, start_time=start_time)
         super().__init__(level=level, formatter=formatter)
         self.stream = stream if stream is not None else sys.stdout
@@ -68,26 +73,28 @@ class FileLogger(BaseHandler):
         Path to the file to open. Defaults to "app.log". If the file
         does not exist it will be created. If the file exists and mode
         is "w" it will be truncated.
-    template: str
-        Logging template for this handler. See Formatter for details.
-    start_time: float
+    template: str | None, optional
+        Logging template for this handler. If None, defaults to "{{msg}}".
+        See Formatter Documentation for details.
+    start_time: float | None, optional
         The start time of the parent Logger. Passed into the Formatter.
+        If None, the current time is used.
     level: int, optional
         Minimum log level for this handler (default: INFO).
     mode: str, optional
         File mode (default: "w"). Any valid Python file mode
         for text files can be used.
     encoding: str | None, optional
-        Encoding used when opening file. Defaults to "utf-8".
+        Encoding used when opening the file. Defaults to "utf-8".
     buffer_size: int, optional
         Number of log calls to buffer before writing to disk.
-        A Value of 1 disables buffering (immediate write). Larger
+        A value of 1 disables buffering (immediate write). Larger
         values improve I/O throughput at the cost of delaying logs (default: 5).
     """
 
     __slots__ = ("file", "buffer_size", "buffer", "closed")
 
-    def __init__(self, *, filename: str = "app.log", template: str, level: int = INFO, mode: str = "w", encoding: str | None = "utf-8", buffer_size: int = 5, start_time: float | None = None) -> None:
+    def __init__(self, *, filename: str = "app.log", template: str | None = None, level: int = INFO, mode: str = "w", encoding: str | None = "utf-8", buffer_size: int = 5, start_time: float | None = None) -> None:
         """Create a file handler.
         
         Parameters
@@ -96,28 +103,31 @@ class FileLogger(BaseHandler):
             Path to the file to open. Defaults to "app.log". If the file
             does not exist it will be created. If the file exists and mode
             is "w" it will be truncated.
-        template: str
-            Logging template for this handler. See Formatter for details.
-        start_time: float
+        template: str | None, optional
+            Logging template for this handler. If None, defaults to "{{msg}}".
+            See Formatter Documentation for details.
+        start_time: float | None, optional
             The start time of the parent Logger. Passed into the Formatter.
+            If None, the current time is used.
         level: int, optional
             Minimum log level for this handler (default: INFO).
         mode: str, optional
             File mode (default: "w"). Any valid Python file mode
             for text files can be used.
         encoding: str | None, optional
-            Encoding used when opening file. Defaults to "utf-8".
+            Encoding used when opening the file. Defaults to "utf-8".
         buffer_size: int, optional
             Number of log calls to buffer before writing to disk.
-            A Value of 1 disables buffering (immediate write). Larger
+            A value of 1 disables buffering (immediate write). Larger
             values improve I/O throughput at the cost of delaying logs (default: 5).
         """
         if start_time is None:
             start_time = time.time()
+        template = "{{msg}}" if template is None else template
         formatter = Formatter(template=template, start_time=start_time)
         super().__init__(level=level, formatter=formatter)
         self.file = open(filename, mode, encoding=encoding)
-        # Ensure buffer_size is at least 1. A buffer_size of 1 means
+        # Ensure buffer_size is at least 1. A value of 1 means
         # write after every log call. Larger values batch writes.
         self.buffer_size = 1 if buffer_size <= 1 else buffer_size
         self.buffer: list[str] = []
@@ -201,7 +211,7 @@ class Logger:
         self._needs_thread: bool = False
 
         self._thread_safe = thread_safe
-        # Create a lock if neccesary
+        # Create a lock if necessary
         self._lock = threading.RLock() if thread_safe else None
 
     def attach(self, handler: BaseHandler) -> None:
@@ -230,7 +240,7 @@ class Logger:
             handler.formatter.start_time = self.start_time
         except AttributeError:
             pass
-        # Recalculate what data is needs to be captured on each log call
+        # Recalculate what data needs to be captured on each log call
         self._recalc_needs()
 
     def detach(self, handler: BaseHandler) -> None:

@@ -4,34 +4,41 @@ from importlib.metadata import distributions
 from pathlib import PurePosixPath, Path
 import json
 
+
 # Data Model
 @dataclass(frozen=True)
 class ComponentInfo:
     # Metadata for an official espu component
     name: str
     package: str
-    kind: str # core | ext | lib
+    kind: str  # core | ext | lib
+
 
 # Load trusted registry from JSON (edited by build script)
 _REGISTRY_PATH = Path(__file__).with_name("registry.json")
 
+
 def _load_registry() -> dict[str, ComponentInfo]:
     if not _REGISTRY_PATH.exists():
-        raise FileNotFoundError(f"Missing registry: {_REGISTRY_PATH}. Reinstall ESPU to fix")
-    
+        raise FileNotFoundError(
+            f"Missing registry: {_REGISTRY_PATH}. Reinstall ESPU to fix"
+        )
+
     data: dict[str, dict] = json.loads(_REGISTRY_PATH.read_text(encoding="utf-8"))
 
     out: dict[str, ComponentInfo] = {}
     for name, meta in data.items():
         out[name] = ComponentInfo(
             name=name,
-            package=str(meta["package"]),   # This is meant to fail if its missing
-            kind=str(meta["kind"])
+            package=str(meta["package"]),  # This is meant to fail if its missing
+            kind=str(meta["kind"]),
         )
 
     return out
 
+
 _AVAILABLE: dict[str, ComponentInfo] = _load_registry()
+
 
 # Internal helpers
 def _espu_contributors() -> dict[str, set[str]]:
@@ -69,10 +76,12 @@ def _espu_contributors() -> dict[str, set[str]]:
 
     return result
 
+
 # Public API
 def available() -> set[str]:
     """Returns all available ESPU packages."""
     return set(_AVAILABLE.keys())
+
 
 def installed() -> set[str]:
     """Returns all installed ESPU packages."""
@@ -81,9 +90,11 @@ def installed() -> set[str]:
         found |= comps
     return found
 
+
 def unknown() -> set[str]:
     """Returns any installed but unknown ESPU packages."""
     return installed() - available()
+
 
 def info(name: str) -> ComponentInfo:
     """Returns info for a specific ESPU package."""
@@ -91,6 +102,7 @@ def info(name: str) -> ComponentInfo:
         return _AVAILABLE[name]
     except KeyError:
         raise KeyError(f"Unknown espu component: {name}") from None
-    
+
+
 def contributors() -> dict[str, set[str]]:
     return _espu_contributors()

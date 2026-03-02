@@ -11,7 +11,7 @@ LEVEL_NAMES = {
     INFO: "INFO",
     WARNING: "WARNING",
     ERROR: "ERROR",
-    CRITICAL: "CRITICAL"
+    CRITICAL: "CRITICAL",
 }
 
 # Precompute mappings to avoid repeated .upper(), .lower() or .capitalize()
@@ -20,5 +20,5 @@ LEVEL_MAPPINGS = {
     "INFO": {"low": "info", "up": "INFO", "case": "Info"},
     "WARNING": {"low": "warning", "up": "WARNING", "case": "Warning"},
     "ERROR": {"low": "error", "up": "ERROR", "case": "Error"},
-    "CRITICAL": {"low": "critical", "up": "CRITICAL", "case": "Critical"}
+    "CRITICAL": {"low": "critical", "up": "CRITICAL", "case": "Critical"},
 }

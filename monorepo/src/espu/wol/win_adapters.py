@@ -1,6 +1,7 @@
 import socket
 from .exceptions import AdapterBufferOverflow, GetAdaptersAddressesError
 
+
 # Use the horrific Win32 API to get a list of Windows network adapters.
 # This function asks Windows for a snapshot of all IPv4 adapters,
 # then manually walks several linked lists inside a raw memory blob.
@@ -30,8 +31,8 @@ def get_windows_adapters(win_buffer_size: int) -> list:
     # lpSockaddr points to a sockaddr_in (IPv4) in memory.
     class SOCKET_ADDRESS(ctypes.Structure):
         _fields_ = [
-            ("lpSockaddr", ctypes.c_void_p),    # void* -> raw sockaddr bytes
-            ("iSockaddrLength", ctypes.c_int)   # size of sockaddr struct
+            ("lpSockaddr", ctypes.c_void_p),  # void* -> raw sockaddr bytes
+            ("iSockaddrLength", ctypes.c_int),  # size of sockaddr struct
         ]
 
     # Forward declaration because this struct contains a pointer to itself
@@ -42,10 +43,13 @@ def get_windows_adapters(win_buffer_size: int) -> list:
     # Represents ONE unicast IP address on an adapter.
     # Windows links these together into a linked list.
     IP_ADAPTER_UNICAST_ADDRESS._fields_ = [
-        ("Length", wintypes.ULONG),     # struct size / ABI versioning
+        ("Length", wintypes.ULONG),  # struct size / ABI versioning
         ("Flags", wintypes.DWORD),
-        ("Next", ctypes.POINTER(IP_ADAPTER_UNICAST_ADDRESS)),   # pointer to the struct that represents the next IP in the linked list
-        ("Address", SOCKET_ADDRESS)     # pointer to sockaddr
+        (
+            "Next",
+            ctypes.POINTER(IP_ADAPTER_UNICAST_ADDRESS),
+        ),  # pointer to the struct that represents the next IP in the linked list
+        ("Address", SOCKET_ADDRESS),  # pointer to sockaddr
     ]
 
     # Forward declaration for adapter linked list
@@ -55,21 +59,19 @@ def get_windows_adapters(win_buffer_size: int) -> list:
     # Represents ONE network adapter.
     # Windows once again returns a linked list of these.
     IP_ADAPTER_ADDRESSES._fields_ = [
-    ("Length", wintypes.ULONG),         # struct size / ABI versioning
-    ("IfIndex", wintypes.DWORD),        # IPv4 interface index
-    ("Next", ctypes.POINTER(IP_ADAPTER_ADDRESSES)),     # next adapter
-    ("AdapterName", ctypes.c_char_p),   # internal name (GUID-like)
-
-    # These are not really needed but without them Windows crappy layout breaks
-    # and returns unusable gibberish.
-    ("FirstUnicastAddress", ctypes.POINTER(IP_ADAPTER_UNICAST_ADDRESS)),
-    ("FirstAnycastAddress", ctypes.c_void_p),
-    ("FirstMulticastAddress", ctypes.c_void_p),
-    ("FirstDnsServerAddress", ctypes.c_void_p),
-    ("DnsSuffix", wintypes.LPWSTR),
-    ("Description", wintypes.LPWSTR),
-
-    ("FriendlyName", wintypes.LPWSTR)   # human-readable name
+        ("Length", wintypes.ULONG),  # struct size / ABI versioning
+        ("IfIndex", wintypes.DWORD),  # IPv4 interface index
+        ("Next", ctypes.POINTER(IP_ADAPTER_ADDRESSES)),  # next adapter
+        ("AdapterName", ctypes.c_char_p),  # internal name (GUID-like)
+        # These are not really needed but without them Windows crappy layout breaks
+        # and returns unusable gibberish.
+        ("FirstUnicastAddress", ctypes.POINTER(IP_ADAPTER_UNICAST_ADDRESS)),
+        ("FirstAnycastAddress", ctypes.c_void_p),
+        ("FirstMulticastAddress", ctypes.c_void_p),
+        ("FirstDnsServerAddress", ctypes.c_void_p),
+        ("DnsSuffix", wintypes.LPWSTR),
+        ("Description", wintypes.LPWSTR),
+        ("FriendlyName", wintypes.LPWSTR),  # human-readable name
     ]
 
     # --- Bind the Win32 API ---
@@ -78,11 +80,11 @@ def get_windows_adapters(win_buffer_size: int) -> list:
     # to manage memory, buffer size and pointer traversal.
     GetAdaptersAddresses = ctypes.windll.iphlpapi.GetAdaptersAddresses
     GetAdaptersAddresses.argtypes = [
-        wintypes.ULONG,                         # Address family (AF_INET)
-        wintypes.ULONG,                         # Flags (unused -> 0)
-        ctypes.c_void_p,                        # Reserved (must be NULL)
-        ctypes.POINTER(IP_ADAPTER_ADDRESSES),   # Output buffer
-        ctypes.POINTER(wintypes.ULONG)          # In/out buffer size
+        wintypes.ULONG,  # Address family (AF_INET)
+        wintypes.ULONG,  # Flags (unused -> 0)
+        ctypes.c_void_p,  # Reserved (must be NULL)
+        ctypes.POINTER(IP_ADAPTER_ADDRESSES),  # Output buffer
+        ctypes.POINTER(wintypes.ULONG),  # In/out buffer size
     ]
 
     # Im going to be honest here. Allocating 1MB of buffer (the default setting) is not how
@@ -99,9 +101,9 @@ def get_windows_adapters(win_buffer_size: int) -> list:
     ret = GetAdaptersAddresses(
         AF_INET,
         GAA_FLAG_INCLUDE_PREFIX,
-        None,   # reserved
+        None,  # reserved
         ctypes.cast(buf, ctypes.POINTER(IP_ADAPTER_ADDRESSES)),
-        ctypes.byref(buf_len)
+        ctypes.byref(buf_len),
     )
 
     # ERROR_BUFFER_OVERFLOW means even 1MB wasnt enough.
@@ -110,7 +112,7 @@ def get_windows_adapters(win_buffer_size: int) -> list:
         raise AdapterBufferOverflow()
     elif ret != 0:
         raise GetAdaptersAddressesError(ret)
-    
+
     adapters = []
 
     # p points to the FIRST adapter struct at the start of the buffer.
@@ -127,8 +129,7 @@ def get_windows_adapters(win_buffer_size: int) -> list:
         while u:
             # Copy the raw sockaddr bytes into Python memory
             raw = ctypes.string_at(
-                u.contents.Address.lpSockaddr,
-                u.contents.Address.iSockaddrLength
+                u.contents.Address.lpSockaddr, u.contents.Address.iSockaddrLength
             )
 
             # sockaddr_in layout (IPv4):
@@ -144,14 +145,16 @@ def get_windows_adapters(win_buffer_size: int) -> list:
             u = u.contents.Next
 
         # Convert this adapter into a sane Python structure
-        adapters.append({
-            "friendly": a.FriendlyName,     # Ethernet, WLAN, whatever
-            "name": a.AdapterName.decode() if a.AdapterName else "",
-            "ifindex": int(a.IfIndex),     # interface index
-            "ips": ips                      # list of IPv4 strings
-        })
+        adapters.append(
+            {
+                "friendly": a.FriendlyName,  # Ethernet, WLAN, whatever
+                "name": a.AdapterName.decode() if a.AdapterName else "",
+                "ifindex": int(a.IfIndex),  # interface index
+                "ips": ips,  # list of IPv4 strings
+            }
+        )
 
         # Move to next adapter node
         p = a.Next
-    
+
     return adapters

@@ -16,6 +16,7 @@ import datetime
 from .config import LEVEL_MAPPINGS, LEVEL_NAMES
 from .utils import basename
 
+
 class Formatter:
     """Compile a logging template into a callable formatter.
 
@@ -43,7 +44,7 @@ class Formatter:
         "requires_time",
         "requires_thread",
         "_static_parts",
-        "_dyn_parts"
+        "_dyn_parts",
     )
 
     def __init__(self, template: str, start_time: float) -> None:
@@ -99,9 +100,9 @@ class Formatter:
             def accessor(msg, level, levelname, frame, created, thread_name, _fmt=fmt):
                 # Use created (passed in at call time) to format as a datetime
                 return datetime.datetime.fromtimestamp(created).strftime(_fmt)
-            
+
             return accessor
-        
+
         # Special case: "time_since_start.format('.3f')"
         if expr.startswith("time_since_start.format(") and expr.endswith(")"):
             self.requires_time = True
@@ -111,9 +112,9 @@ class Formatter:
 
             def accessor(msg, level, levelname, frame, created, thread_name, _fmt=fmt):
                 return _fmt.format(created - self.start_time)
-            
+
             return accessor
-        
+
         # Split expression on colon to support format specs (e.g. "{{ lineno:04d }}")
         if ":" in expr:
             key_expr, fmt_spec = expr.split(":", 1)
@@ -156,14 +157,36 @@ class Formatter:
                     else:
                         value = getattr(value, part, None)
                 return value
-            
+
             if fmt is None:
-                def accessor(msg, level, levelname, frame, created, thread_name, _rg=root_getter, _rt=resolve_tail):
+
+                def accessor(
+                    msg,
+                    level,
+                    levelname,
+                    frame,
+                    created,
+                    thread_name,
+                    _rg=root_getter,
+                    _rt=resolve_tail,
+                ):
                     v = _rt(_rg(msg, level, levelname, frame, created, thread_name))
                     return "<invalid>" if v is None else str(v)
+
                 return accessor
             else:
-                def accessor(msg, level, levelname, frame, created, thread_name, _rg=root_getter, _rt=resolve_tail, _fmt=fmt):
+
+                def accessor(
+                    msg,
+                    level,
+                    levelname,
+                    frame,
+                    created,
+                    thread_name,
+                    _rg=root_getter,
+                    _rt=resolve_tail,
+                    _fmt=fmt,
+                ):
                     v = _rt(_rg(msg, level, levelname, frame, created, thread_name))
                     if v is None:
                         return "<invalid>"
@@ -171,16 +194,31 @@ class Formatter:
                         return _fmt.format(v)
                     except Exception:
                         return "<format_error>"
+
                 return accessor
-            
+
         # No dot notation, just a simple root accessor
         if fmt is None:
-            def accessor(msg, level, levelname, frame, created, thread_name, _rg=root_getter):
+
+            def accessor(
+                msg, level, levelname, frame, created, thread_name, _rg=root_getter
+            ):
                 v = _rg(msg, level, levelname, frame, created, thread_name)
                 return "<invalid>" if v is None else str(v)
+
             return accessor
         else:
-            def accessor(msg, level, levelname, frame, created, thread_name, _rg=root_getter, _fmt=fmt):
+
+            def accessor(
+                msg,
+                level,
+                levelname,
+                frame,
+                created,
+                thread_name,
+                _rg=root_getter,
+                _fmt=fmt,
+            ):
                 v = _rg(msg, level, levelname, frame, created, thread_name)
                 if v is None:
                     return "<invalid>"
@@ -188,11 +226,12 @@ class Formatter:
                     return _fmt.format(v)
                 except Exception:
                     return "<format_error>"
+
             return accessor
-    
+
     def _compile_root_getter(self, key: str) -> callable:
         """Return a function that fetches the root value for a given key.
-        
+
         This function does only the minimal work needed to get the value
         required by the template. More complicated resolution (dot navigation)
         happens in the caller if necessary.
@@ -201,6 +240,7 @@ class Formatter:
             # Return the message passed to the log call
             def get(msg, level, levelname, frame, created, thread_name):
                 return msg
+
             return get
         if key == "log_level":
             # Return the mapping for the level (low, up, case).
@@ -212,9 +252,10 @@ class Formatter:
                     {
                         "low": levelname.lower(),
                         "up": levelname.upper(),
-                        "case": levelname.capitalize()
-                    }
+                        "case": levelname.capitalize(),
+                    },
                 )
+
             return get
         if key == "ctime":
             # Return a datetime object from the timestamp passed in.
@@ -223,44 +264,60 @@ class Formatter:
             # accessor is only present when requires_time is True.
             def get(msg, level, levelname, frame, created, thread_name):
                 return datetime.datetime.fromtimestamp(created)
+
             return get
         if key == "time_since_start":
             # Compute elapsed time relative to the loggers start time
             def get(msg, level, levelname, frame, created, thread_name):
                 return created - self.start_time
+
             return get
         if key == "filename":
             # Extracts just the base name from the frames code file
             def get(msg, level, levelname, frame, created, thread_name):
                 return basename(frame.f_code.co_filename)
+
             return get
         if key == "pathname":
             # Full path of the current source file
             def get(msg, level, levelname, frame, created, thread_name):
                 return frame.f_code.co_filename
+
             return get
         if key == "lineno":
             # Current line number in the source
             def get(msg, level, levelname, frame, created, thread_name):
                 return frame.f_lineno
+
             return get
         if key == "funcName":
             # Name of the current function
             def get(msg, level, levelname, frame, created, thread_name):
                 return frame.f_code.co_name
+
             return get
         if key == "threadName":
             # Fetch thread name lazily in the caller and pass it as
             # thread_name argument, so the getter just returns that.
             def get(msg, level, levelname, frame, created, thread_name):
                 return thread_name
+
             return get
+
         # Default: unknown key returns None which will be treated as invalid
         def get(msg, level, levelname, frame, created, thread_name):
             return None
+
         return get
-    
-    def format(self, msg: str, level: int, frame, created: float | None, thread_name: str | None) -> str:
+
+    def format(
+        self,
+        msg: str,
+        level: int,
+        frame,
+        created: float | None,
+        thread_name: str | None,
+    ) -> str:
         """Assemble the final log line from static parts and dynamic accessors.
 
         Parameters

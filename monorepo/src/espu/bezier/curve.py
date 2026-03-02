@@ -1,10 +1,17 @@
 from espu.lib.vector import Vec2
-from .utils import quadratic_roots, curvature_from_derivatives, lerp, t_at_arc_length, build_arc_table
+from .utils import (
+    quadratic_roots,
+    curvature_from_derivatives,
+    lerp,
+    t_at_arc_length,
+    build_arc_table,
+)
 from typing import Tuple
 from .exceptions import CurveNotBakedError
 
+
 # According to the Bernstein Polynomial Form
-#https://en.wikipedia.org/wiki/Bernstein_polynomial
+# https://en.wikipedia.org/wiki/Bernstein_polynomial
 class LinearBezierCurve:
     def __init__(self, P1: Vec2, P2: Vec2):
         self.P1 = P1
@@ -12,14 +19,15 @@ class LinearBezierCurve:
 
     def resolve(self, t: float) -> Vec2:
         return lerp(self.P1, self.P2, t)
-    
+
     def derivative(self) -> Vec2:
         return self.P2 - self.P1
-    
+
     def bounding_box(self) -> Tuple[float, float, float, float]:
         xs = [self.P1.x, self.P2.x]
         ys = [self.P1.y, self.P2.y]
         return min(xs), min(ys), max(xs), max(ys)
+
 
 class QuadraticBezierCurve:
     def __init__(self, P1: Vec2, P2: Vec2, P3: Vec2):
@@ -30,23 +38,13 @@ class QuadraticBezierCurve:
 
     def resolve(self, t: float) -> Vec2:
         u = 1.0 - t
-        return (
-            self.P1 * (u * u)
-            + self.P2 * (2 * u * t)
-            + self.P3 * (t * t)
-        )
-    
+        return self.P1 * (u * u) + self.P2 * (2 * u * t) + self.P3 * (t * t)
+
     def derivative(self) -> LinearBezierCurve:
-        return LinearBezierCurve(
-            2 * (self.P2 - self.P1),
-            2 * (self.P3 - self.P2)
-        )
-    
+        return LinearBezierCurve(2 * (self.P2 - self.P1), 2 * (self.P3 - self.P2))
+
     def bounding_box(self) -> Tuple[float, float, float, float]:
-        points = [
-            self.resolve(0.0),
-            self.resolve(1.0)
-        ]
+        points = [self.resolve(0.0), self.resolve(1.0)]
 
         # derivative is linear
         d = self.derivative()
@@ -57,7 +55,7 @@ class QuadraticBezierCurve:
                 return None
             t = a / denom
             return t if 0.0 < t < 1.0 else None
-        
+
         tx = axis_root(d.P1.x, d.P2.x)
         ty = axis_root(d.P1.y, d.P2.y)
 
@@ -70,11 +68,11 @@ class QuadraticBezierCurve:
         ys = [p.y for p in points]
 
         return min(xs), min(ys), max(xs), max(ys)
-    
+
     def curvature(self, t: float, d1: LinearBezierCurve, d2: Vec2) -> float:
         v = d1.resolve(t)
         return curvature_from_derivatives(v, d2)
-    
+
     def bake(self, steps: int = 32):
         self._arc_table = build_arc_table(self, steps)
         self._arc_length = self._arc_table[-1][1]
@@ -87,6 +85,7 @@ class QuadraticBezierCurve:
         t = t_at_arc_length(self, s)
         return self.resolve(t)
 
+
 class CubicBezierCurve:
     def __init__(self, P1: Vec2, P2: Vec2, P3: Vec2, P4: Vec2):
         self.P1 = P1
@@ -98,36 +97,31 @@ class CubicBezierCurve:
     def resolve(self, t: float) -> Vec2:
         u = 1.0 - t
         return (
-            self.P1 * (u*u*u)
-            + self.P2 * (3*u*u*t)
-            + self.P3 * (3*u*t*t)
-            + self.P4 * (t*t*t)
+            self.P1 * (u * u * u)
+            + self.P2 * (3 * u * u * t)
+            + self.P3 * (3 * u * t * t)
+            + self.P4 * (t * t * t)
         )
-    
+
     def derivative(self) -> QuadraticBezierCurve:
         return QuadraticBezierCurve(
-            3 * (self.P2 - self.P1),
-            3 * (self.P3 - self.P2),
-            3 * (self.P4 - self.P3)
+            3 * (self.P2 - self.P1), 3 * (self.P3 - self.P2), 3 * (self.P4 - self.P3)
         )
-    
+
     def bounding_box(self) -> Tuple[float, float, float, float]:
-        points = [
-            self.resolve(0.0),
-            self.resolve(1.0)
-        ]
+        points = [self.resolve(0.0), self.resolve(1.0)]
 
         d = self.derivative()
 
         # Convert quadratic Bezier to power basis
-        a = d.P1 - 2*d.P2 + d.P3
-        b = 2*(d.P2 - d.P1)
+        a = d.P1 - 2 * d.P2 + d.P3
+        b = 2 * (d.P2 - d.P1)
         c = d.P1
 
         for t in quadratic_roots(a.x, b.x, c.x):
             if 0.0 < t < 1.0:
                 points.append(self.resolve(t))
-            
+
         for t in quadratic_roots(a.y, b.y, c.y):
             if 0.0 < t < 1.0:
                 points.append(self.resolve(t))
@@ -136,8 +130,10 @@ class CubicBezierCurve:
         ys = [p.y for p in points]
 
         return min(xs), min(ys), max(xs), max(ys)
-    
-    def curvature(self, t: float, d1: QuadraticBezierCurve, d2: LinearBezierCurve) -> float:
+
+    def curvature(
+        self, t: float, d1: QuadraticBezierCurve, d2: LinearBezierCurve
+    ) -> float:
         v = d1.resolve(t)
         a = d2.resolve(t)
         return curvature_from_derivatives(v, a)

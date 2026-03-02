@@ -5,9 +5,10 @@ import sys
 import time
 import threading
 
+
 class TerminalLogger(BaseHandler):
     """Handler that writes log messages to a text stream (stdout by default)
-    
+
     Parameters
     ----------
     template: str | None, optional
@@ -29,7 +30,15 @@ class TerminalLogger(BaseHandler):
 
     __slots__ = ("stream", "flush")
 
-    def __init__(self, *, template: str | None = None, level: int = INFO, stream=None, flush: bool = False, start_time: float | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        template: str | None = None,
+        level: int = INFO,
+        stream=None,
+        flush: bool = False,
+        start_time: float | None = None
+    ) -> None:
         """Create a terminal handler.
 
         Parameters
@@ -58,11 +67,19 @@ class TerminalLogger(BaseHandler):
         self.stream = stream if stream is not None else sys.stdout
         self.flush = flush
 
-    def emit(self, msg: str, level: int, frame, created: float | None, thread_name: str | None) -> None:
+    def emit(
+        self,
+        msg: str,
+        level: int,
+        frame,
+        created: float | None,
+        thread_name: str | None,
+    ) -> None:
         line = self.formatter.format(msg, level, frame, created, thread_name)
         self.stream.write(line + "\n")
         if self.flush:
             self.stream.flush()
+
 
 class FileLogger(BaseHandler):
     """Handler that writes log messages to a file with optional buffering.
@@ -94,9 +111,19 @@ class FileLogger(BaseHandler):
 
     __slots__ = ("file", "buffer_size", "buffer", "closed")
 
-    def __init__(self, *, filename: str = "app.log", template: str | None = None, level: int = INFO, mode: str = "w", encoding: str | None = "utf-8", buffer_size: int = 5, start_time: float | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        filename: str = "app.log",
+        template: str | None = None,
+        level: int = INFO,
+        mode: str = "w",
+        encoding: str | None = "utf-8",
+        buffer_size: int = 5,
+        start_time: float | None = None
+    ) -> None:
         """Create a file handler.
-        
+
         Parameters
         ----------
         filename: str, optional
@@ -133,7 +160,14 @@ class FileLogger(BaseHandler):
         self.buffer: list[str] = []
         self.closed: bool = False
 
-    def emit(self, msg: str, level: int, frame, created: float | None, thread_name: str | None) -> None:
+    def emit(
+        self,
+        msg: str,
+        level: int,
+        frame,
+        created: float | None,
+        thread_name: str | None,
+    ) -> None:
         if self.closed:
             return
         line = self.formatter.format(msg, level, frame, created, thread_name)
@@ -165,6 +199,7 @@ class FileLogger(BaseHandler):
             finally:
                 self.closed = True
 
+
 # Logger (top-level)
 #
 # The Logger coordinates log calls, level filtering and fan-out to
@@ -179,9 +214,10 @@ class FileLogger(BaseHandler):
 # inexpensive, but attachments should normally happen once during
 # startup.
 
+
 class Logger:
     """Simple logging coordinator with handler fan-out and level filtering.
-    
+
     Parameters
     ----------
     level: int, optional
@@ -196,7 +232,7 @@ class Logger:
         "_needs_time",
         "_needs_thread",
         "_thread_safe",
-        "_lock"
+        "_lock",
     )
 
     def __init__(self, level: int = INFO, *, thread_safe: bool = False) -> None:
@@ -216,7 +252,7 @@ class Logger:
 
     def attach(self, handler: BaseHandler) -> None:
         """Add a handler to this logger.
-        
+
         The logger will call the handler for every log message.
         If the same handler is attached multiple times it will
         receive duplicate log messages.
@@ -230,7 +266,7 @@ class Logger:
 
     def _attach(self, handler: BaseHandler) -> None:
         """Add a handler to this logger.
-        
+
         The logger will call the handler for every log message.
         If the same handler is attached multiple times it will
         receive duplicate log messages.
@@ -277,7 +313,7 @@ class Logger:
         # Skip messages below the logger threshold or if there are no attached handlers.
         if level < self.level or not self._handlers:
             return
-        
+
         if self._thread_safe:
             with self._lock:
                 self._dispatch(level, msg)
@@ -287,9 +323,7 @@ class Logger:
     def _dispatch(self, level: int, msg: str) -> None:
         frame = sys._getframe(2)
         created = time.time() if self._needs_time else None
-        thread_name = (
-            threading.current_thread().name if self._needs_thread else None
-        )
+        thread_name = threading.current_thread().name if self._needs_thread else None
 
         # Fan out to handlers. Each handler performs its own logic.
         for handler in self._handlers:
@@ -301,7 +335,7 @@ class Logger:
     def debug(self, msg: str) -> None:
         """Log a message with severity DEBUG."""
         self._log(DEBUG, msg)
-    
+
     def info(self, msg: str) -> None:
         """Log a message with severity INFO."""
         self._log(INFO, msg)

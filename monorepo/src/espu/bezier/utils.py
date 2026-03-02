@@ -1,33 +1,35 @@
 import math
 from espu.lib.vector import Vec2
 
+
 def quadratic_roots(a, b, c):
     if abs(a) < 1e-9:
         if abs(b) < 1e-9:
             return []
         return [-c / b]
-    
+
     disc = b * b - 4 * a * c
     if disc < 0:
         return []
-    
+
     s = math.sqrt(disc)
-    return [
-        (-b + s) / (2 * a),
-        (-b - s) / (2 * a)
-    ]
+    return [(-b + s) / (2 * a), (-b - s) / (2 * a)]
+
 
 def det(a: Vec2, b: Vec2) -> float:
     return a.x * b.y - a.y * b.x
+
 
 def curvature_from_derivatives(v: Vec2, a: Vec2) -> float:
     speed = v.length()
     if speed == 0:
         return 0.0
-    return det(v, a) / (speed ** 3)
+    return det(v, a) / (speed**3)
 
-def lerp(a , b, t: float):
+
+def lerp(a, b, t: float):
     return a + (b - a) * t
+
 
 def build_arc_table(obj, steps: int):
     table = []
@@ -45,15 +47,16 @@ def build_arc_table(obj, steps: int):
         prev_point = point
 
     return table
-    
+
+
 def t_at_arc_length(obj, s: float) -> float:
     table = obj._arc_table
-    
+
     if s <= 0.0:
         return 0.0
     if s >= obj._arc_length:
         return 1.0
-        
+
     lo = 0
     hi = len(table) - 1
 

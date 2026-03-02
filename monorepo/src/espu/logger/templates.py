@@ -4,7 +4,7 @@ timing_template = (
     "[{{log_level.up}}] "
     "Elapsed: {{time_since_start:.3f}}s | "
     "{{msg}}"
-    )
+)
 informational_template = (
     "[{{log_level.up}}] "
     "Filename: {{filename}} | "

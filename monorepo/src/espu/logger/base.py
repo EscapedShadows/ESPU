@@ -10,6 +10,7 @@
 
 from .formatter import Formatter
 
+
 class BaseHandler:
     """Base class for all handlers.
 
@@ -31,12 +32,19 @@ class BaseHandler:
     @property
     def requires_time(self) -> bool:
         return self.formatter.requires_time
-    
+
     @property
     def requires_thread(self) -> bool:
         return self.formatter.requires_thread
-    
-    def handle(self, msg: str, level: int, frame, created: float | None, thread_name: str | None) -> None:
+
+    def handle(
+        self,
+        msg: str,
+        level: int,
+        frame,
+        created: float | None,
+        thread_name: str | None,
+    ) -> None:
         """Entry point for the Logger.
 
         The Logger calls this method once per attached handler on every
@@ -49,6 +57,13 @@ class BaseHandler:
             return
         self.emit(msg, level, frame, created, thread_name)
 
-    def emit(self, msg: str, level: int, frame, created: float | None, thread_name: str | None) -> None:
+    def emit(
+        self,
+        msg: str,
+        level: int,
+        frame,
+        created: float | None,
+        thread_name: str | None,
+    ) -> None:
         """Emit a single formatted log line. Must be overwritten by subclasses."""
         raise NotImplementedError

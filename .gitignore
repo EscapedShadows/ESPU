@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+secret.py
+packages
+build.py
+publish.py
+server.py
+tests
+.vscode
+environment_manager
